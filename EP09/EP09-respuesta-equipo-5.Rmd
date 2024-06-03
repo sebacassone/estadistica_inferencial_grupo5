@@ -1,0 +1,51 @@
+---
+title: "EP08"
+author: "Sebastián Cassone"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+```{r}
+library(dplyr)
+
+# Leer los datos
+datos = read.csv2("/home/seba/Documentos/ejercicios_R/EI/estadistica_inferencial_grupo5/EP09 Datos.csv")
+
+set.seed(6604)
+
+# Se filtran a las mujeres
+datos <- datos %>% filter(datos$Gender == 0)
+
+# Se obtiene una muestra aleatoria de 100 mujeres.
+datos_filtrados <- datos %>% sample_n(100)
+datos_filtrados
+```
+
+Una vez que se obtuvieron los datos, se decidió descartar como variables predictoras, las siguientes ocho:
+- Biacromial.diameter 	Diámetro biacromial (a la altura de los hombros) 
+- Biiliac.diameter 	Diámetro biiliaco (a la altura de la pelvis) 
+- Bitrochanteric.diameter 	Diámetro bitrocantéreo (a la altura de las caderas) 
+- Chest.depth 	Profundidad del pecho (entre la espina y el esternón a la altura de los pezones) 	cm
+- Chest.diameter 	Diámetro del pecho (a la altura de los pezones)
+- Elbows.diameter 	Suma de los diámetros de los codos
+- Wrists.diameter 	Suma de los diámetros de las muñecas
+- Knees.diameter 	Suma de los diámetros de las rodillas
+
+Luego, de las variables predictoras restantes se decidió considerar la variable predictora para el RLS Thigh.Girth que corresponde al Grosor promedio de ambos muslos bajo el pliegue del glúteo.
+
+```{r}
+library(dplyr)
+
+# Leer los datos
+datos = read.csv2("/home/seba/Documentos/ejercicios_R/EI/estadistica_inferencial_grupo5/EP09 Datos.csv")
+
+set.seed(6604)
+
+# Se filtran a las mujeres
+datos <- datos %>% filter(datos$Gender == 0)
+
+# Se obtiene una muestra aleatoria de 100 mujeres.
+datos_filtrados <- datos %>% sample_n(100)
+datos_filtrados
+```
