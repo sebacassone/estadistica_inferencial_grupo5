@@ -10,7 +10,7 @@ output: html_document
 library(dplyr)
 
 # Leer los datos
-datos = read.csv2("/home/seba/Documentos/ejercicios_R/EI/estadistica_inferencial_grupo5/EP09 Datos.csv")
+datos = read.csv2("C:/Users/josef/OneDrive/Escritorio/EST/estadistica_inferencial_grupo5/EP09/EP09 Datos.csv")
 
 set.seed(6604)
 
@@ -20,6 +20,19 @@ datos <- datos %>% filter(datos$Gender == 0)
 # Se obtiene una muestra aleatoria de 100 mujeres.
 datos_filtrados <- datos %>% sample_n(100)
 datos_filtrados
+
+correlaciones = cor(datos_filtrados)
+print(correlaciones)
+
+
+# Dividir los datos en conjuntos de entrenamiento y prueba
+indices_entrenamiento = sample(1:nrow(datos_filtrados), 0.7 * nrow(datos_filtrados))
+datos_entrenamiento = datos_filtrados[indices_entrenamiento, ]
+datos_prueba = datos_filtrados[-indices_entrenamiento, ]
+
+
+
+
 ```
 
 Una vez que se obtuvieron los datos, se decidió descartar como variables predictoras, las siguientes ocho:
