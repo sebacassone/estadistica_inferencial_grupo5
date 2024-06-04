@@ -33,24 +33,59 @@ datos_prueba = datos_filtrados[-indices_entrenamiento, ]
 #Modelo nulo
 
 modelo1 = lm(Weight ~ Thigh.Girth, data = datos_entrenamiento)  #RLS var: Thigh
-modelo_completo =
+# Ajustar el modelo de regresión lineal múltiple
+modelo_completo = modelo <- lm(Weight ~Biacromial.diameter + Biiliac.diameter + Bitrochanteric.diameter + Chest.depth + Chest.diameter + Elbows.diameter + Wrists.diameter + Knees.diameter + Thigh.Girth, data = datos_entrenamiento)
+
 
 
 
 # Resumen de los modelos
-
 cat("\n\n")
 cat("Modelo 1:Regresion Lineal Simple, variable predictora Thig\n")
 cat("------------------------------------------------\n")
 print(summary(modelo1))
 
 
+cat("\n\n")
+cat("Modelo Completo:Regresion Lineal Multiple - Modelo completo\n")
+cat("------------------------------------------------\n")
+print(summary(modelo_completo))
+
 
 
 
 #Evaluar variables a incorporar
-print(add1(modelo1, scope = modelo1))
+print(add1(modelo1, scope = modelo_completo))
 cat("\n\n")
+
+#Agregamos la variable con menor AIC, Elbows.diameter (218.84)
+modelo2 = update(modelo1, . ~ . + Elbows.diameter)
+print(summary(modelo1))
+
+#Evaluar variables a incorporar
+print(add1(modelo2, scope = modelo_completo))
+
+#Agregamos la variable con menor AIC, Chest.diameter (204.57)
+modelo3 = update(modelo2, . ~ . + Chest.diameter)
+
+#Evaluar variables a incorporar 
+print(add1(modelo3, scope = modelo_completo))
+
+#Agregamos la variable con menor AIC, Chest.depth (199.28)
+modelo4 = update(modelo3, . ~ . + Chest.depth)
+
+#Evaluar variables  a incorporar
+print(add1(modelo4, scope = modelo_completo, test = "F"))
+
+#Agregamos la variable con menor AIC, Biiliac.diameter (195.65)
+modelo5 = update(modelo4, . ~ . + Biiliac.diameter)
+
+#Evaluar variables a incorporar
+print(add1(modelo5, scope = modelo_completo))
+
+#Agregamos la variable con menor AIC, Biacromial.diameter(195.65)
+modelo6 = update(modelo5, . ~ . + Biacromial.diameter)
+
 
 ```
 
