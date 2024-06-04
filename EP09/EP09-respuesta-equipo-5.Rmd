@@ -30,8 +30,27 @@ indices_entrenamiento = sample(1:nrow(datos_filtrados), 0.7 * nrow(datos_filtrad
 datos_entrenamiento = datos_filtrados[indices_entrenamiento, ]
 datos_prueba = datos_filtrados[-indices_entrenamiento, ]
 
+#Modelo nulo
+
+modelo1 = lm(Weight ~ Thigh.Girth, data = datos_entrenamiento)  #RLS var: Thigh
+modelo_completo =
 
 
+
+# Resumen de los modelos
+
+cat("\n\n")
+cat("Modelo 1:Regresion Lineal Simple, variable predictora Thig\n")
+cat("------------------------------------------------\n")
+print(summary(modelo1))
+
+
+
+
+
+#Evaluar variables a incorporar
+print(add1(modelo1, scope = modelo1))
+cat("\n\n")
 
 ```
 
