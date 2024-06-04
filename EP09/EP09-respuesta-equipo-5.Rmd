@@ -55,39 +55,110 @@ print(summary(modelo_completo))
 
 
 #Evaluar variables a incorporar
-print(add1(modelo1, scope = modelo_completo))
+print(add1(modelo1, scope = modelo_completo, test = "F"))
 cat("\n\n")
 
-#Agregamos la variable con menor AIC, Elbows.diameter (218.84)
+#Agregamos la variable con menor AIC, Elbows.diameter (218.84), menor RSS(1464.2)
 modelo2 = update(modelo1, . ~ . + Elbows.diameter)
 print(summary(modelo1))
 
 #Evaluar variables a incorporar
-print(add1(modelo2, scope = modelo_completo))
+print(add1(modelo2, scope = modelo_completo, test = "F"))
 
-#Agregamos la variable con menor AIC, Chest.diameter (204.57)
+#Agregamos la variable con menor AIC, Chest.diameter (204.57), menor RSS (1160.5)
 modelo3 = update(modelo2, . ~ . + Chest.diameter)
 
 #Evaluar variables a incorporar 
-print(add1(modelo3, scope = modelo_completo))
+#En el AIC, todas las variables presentan similares AIC, aunque Knees.diameter
+#presenta el menor RSS, y el menor p-value por lo tanto se escoge esa variable.
+print(add1(modelo3, scope = modelo_completo, test = "F"))
 
-#Agregamos la variable con menor AIC, Chest.depth (199.28)
-modelo4 = update(modelo3, . ~ . + Chest.depth)
+#Agregamos la variable con menor RSS, Knees.diameter (1003.5) y menor p-value (0.002194 **)
+modelo4 = update(modelo3, . ~ . + Knees.diameter)
 
 #Evaluar variables  a incorporar
 print(add1(modelo4, scope = modelo_completo, test = "F"))
 
-#Agregamos la variable con menor AIC, Biiliac.diameter (195.65)
+#Agregamos la variable con menor AIC,RSS, y p-value Chest.depth RSS(141.097)
 modelo5 = update(modelo4, . ~ . + Biiliac.diameter)
 
 #Evaluar variables a incorporar
-print(add1(modelo5, scope = modelo_completo))
+print(add1(modelo5, scope = modelo_completo, test = "F"))
 
-#Agregamos la variable con menor AIC, Biacromial.diameter(195.65)
-modelo6 = update(modelo5, . ~ . + Biacromial.diameter)
+#Agregamos la variable con menor AIC, RSS y p-value Chest.depth RSS(848.51)
+modelo6 = update(modelo5, . ~ . + Chest.depth)
+print(summary(modelo6))
+
+```
+
+## Paso 7
+```{r}
+#Paso 7
+
+#Reducir a matriz de datos que solo contenga los predictores
+predictores = names(coef(modelo6)) [-1]
+datos_entrenamiento = datos_entrenamiento[,c(predictores, "Weight")]
+
+#Construir una matriz de datos con la respuesta predicha, los residuos y estadisiticas
+#para evaluar la influencia de cada una de las 70 observaciones
+
+resultados = data.frame(respuesta_predicha = fitted(modelo6))
+resultados[["residuos_estandarizados"]] = rstandard(modelo6)
+resultados[["residuos_estudiantizados"]] = rstudent(modelo6)
+resultados[["distancia_Cook"]] = cooks.distance(modelo6)
+resultados[["dfbeta"]] = dfbeta(modelo6)
+resultados[["dffit"]] = dffits(modelo6)
+resultados[["apalancamiento"]] = hatvalues(modelo6)
+resultados[["covratio"]] = covratio(modelo6)
+
+cat("Identificacion de valores atipicos : \n")
+#Observaciones por fuera del 95% esperado
+
+sospechosos1 <- which (abs (resultados [["residuos_estandarizados"]]) > 1.96)
+
+cat("- Residuos estandarizados fuera del 95% esperado:", sospechosos1, "\n")
+
+# Observaciones con distancia de Cook mayor a uno.
+sospechosos2 <- which(resultados [["cooks.distance"]]> 1)
+
+cat("- Residuos con una distancia de Cook alta:", sospechosos2, "\n")
+# Observaciones con apalancamiento mayor igual al doble del # apalancamiento promedio.
+apal_medio <- (ncol(datos) + 1) / nrow(datos)
+
+
+sospechosos3 <- which (resultados [["apalancamiento"]] > 2 * apal_medio)
+cat ("Residuos con apalancamiento fuera de rango:",sospechosos3, "\n")
+
+# Observaciones con DFBeta mayor o igual a 1.
+sospechosos4 <- which(apply(resultados [["dfbeta"]] >= 1, 1, any)) 
+names (sospechosos4) <- NULL
+cat("Residuos con DFBeta >= 1: ",sospechosos4, "\n")
+
+# Observaciones con razón de covarianza fuera de rango. 
+inferior <- 1 - 3 * apal_medio
+superior <- 1 + 3 * apal_medio
+sospechosos5 <- which (resultados [["covratio"]] < inferior |
+                         resultados [["covratio"]]> superior)
+cat("- Residuos con razón de covarianza fuera de rango: ", sospechosos5, "\n")
+
+
+#Resumen de valores sospechosos.
+sospechosos <- c(sospechosos1, sospechosos2, sospechosos3, sospechosos4, sospechosos5)
+sospechosos <- sort (unique (sospechosos))
+cat ("\nResumen de valores sospechosos: \n")
+cat ("Apalancamiento promedio: ", apal_medio, "\n")
+
+cat("Intervalo razón de covarianza: [", inferior, superior, "]\n\n", sep = "")
+print(round(resultados [sospechosos, c("distancia_Cook", "apalancamiento","covratio")], 3))
+
+cat("No se presentan datos, con distancia de Cook mayor a 1, por lo tanto no hay presencia de observaciones potencialmente problematicos \nEn apalancamientose observa una unica situacion en que es mayor al promedio(0.1) de manera triple que seria la observacion 3, con un valor de apalancamiento del 0.367 \nY por ultimo la la razon de covarianza se observan 3 valores fuera del intervalo de covarianza [0.71 , 3], que son la observacion 84, 79 y 9, aunque no se realizaran cambios en los datos a analizar dado que, se formaria un sezgo al sobreajustar nuestros datos.")
+
 
 
 ```
+
+
+
 
 Una vez que se obtuvieron los datos, se decidió descartar como variables predictoras, las siguientes ocho:
 - Biacromial.diameter 	Diámetro biacromial (a la altura de los hombros) 
