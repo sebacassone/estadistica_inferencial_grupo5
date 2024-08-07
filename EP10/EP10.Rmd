@@ -8,47 +8,43 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-Comenzamos leyendo el archivo. (Avanzamos mañana a las 7).
-
-
-```{r cars}
+Comenzamos leyendo el archivo.
+```{r}
 # Leer los datos
 nombre_archivo <- "EP09 Datos.csv"
 carpeta <- "/home/seba/Documentos/ejercicios_R/EI/estadistica_inferencial_grupo5/EP10"
 ruta <- file.path(carpeta, nombre_archivo)
-ruta
+datos <- read.csv2(ruta, stringsAsFactors = TRUE)
+
 ```
 
-```{r}
-#Datos 9 - E10
-datos = read.csv2("C:/Users/josef/Downloads/EP09 Datos.csv")
+Luego, se calcula la columna del IMC para poder insertarlo en el dataframe.
 
+```{r}
 # Calcular el IMC
 datos$IMC <- datos$Weight / ((datos$Height*1/100)^2)
+# Filtrar mujeres
+mujeres <- subset(datos, Gender == 0)
+print(cor(mujeres))
+```
 
-# Crear la variable dicotómica EN (estado nutricional)
-datos$EN <- ifelse(datos$IMC >= 23.2, "Sobrepeso", "No sobrepeso")
+Con la función cor() se obtienen las correlaciones entre variables predictoras y la variable de respuesta no aún dicotómica para determinar que variables predictoras nos podrían ayudar a predecir el IMC, con esto pudimos determinar que la variable predictora que nos podría con esta tarea es Waist Girth: 0.8707, además que con investigación que pudimos realizar (https://fundaciondelcorazon.com/prensa/notas-de-prensa/2264-medida-perimetro-abdominal-es-indicador-enfermedad-cardiovascular-mas-fiable-imc-.html) pudimos determinar que esta variable predictora nos servirá en este caso.
+Además, se obtiene la variable de respuesta de tipo dicotómica y agrega al dataframe. Luego, obtenemos las muestras necesarias para resolver el problema. 
 
-
+```{r}
 #Ahora podemos construir un modelo de regresión logística para predecir la variable EN, de acuerdo con las siguientes instrucciones:
 set.seed(1412)
 
-# Filtrar mujeres
-mujeres <- subset(datos, Gender == 0)
+# Crear la variable dicotómica EN (estado nutricional)
+mujeres$EN <- ifelse(mujeres$IMC >= 23.2, 1, 0)
 
 # Separar mujeres con "Sobrepeso" y "No sobrepeso"
-mujeres_sobrepeso <- subset(mujeres, EN == "Sobrepeso")
-mujeres_no_sobrepeso <- subset(mujeres, EN == "No sobrepeso")
+mujeres_sobrepeso <- subset(mujeres, EN == 1)
+mujeres_no_sobrepeso <- subset(mujeres, EN == 0)
 
 # Seleccionar 75 mujeres de cada grupo (75 "Sobrepeso" y 75 "No sobrepeso")
 muestra_sobrepeso <- mujeres_sobrepeso[sample(nrow(mujeres_sobrepeso), 75), ]
 muestra_no_sobrepeso <- mujeres_no_sobrepeso[sample(nrow(mujeres_no_sobrepeso), 75), ]
-
-# Combinar las muestras seleccionadas
-muestra_total <- rbind(muestra_sobrepeso, muestra_no_sobrepeso)
-
-# Mezclar la muestra total
-muestra_total <- muestra_total[sample(nrow(muestra_total)), ]
 
 # Dividir la muestra en dos conjuntos
 # 100 personas (50 con EN "Sobrepeso" y 50 con EN "No sobrepeso") para el modelo RLO
@@ -75,7 +71,10 @@ evaluacion <- rbind(
 - Wrists.diameter 	Suma de los diámetros de las muñecas
 - Knees.diameter 	Suma de los diámetros de las rodillas
 
-```{r}
+4. Se construye el modelo de regresión logística
 
+```{r}
+modelo <- glm(EN ~ Waist.Girth, family = binomial(link = "logit"), entrenamiento)
+print(summary(modelo))
 ```
 
