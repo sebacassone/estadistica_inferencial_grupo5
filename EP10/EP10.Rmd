@@ -1,0 +1,22 @@
+---
+title: "EP10"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Comenzamos leyendo el archivo. (Avanzamos mañana a las 7).
+
+
+```{r cars}
+# Leer los datos
+nombre_archivo <- "EP09 Datos.csv"
+carpeta <- "/home/seba/Documentos/ejercicios_R/EI/estadistica_inferencial_grupo5/EP10"
+ruta <- file.path(carpeta, nombre_archivo)
+ruta
+```
+
+
