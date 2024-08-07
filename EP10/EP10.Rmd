@@ -19,4 +19,63 @@ ruta <- file.path(carpeta, nombre_archivo)
 ruta
 ```
 
+```{r}
+#Datos 9 - E10
+datos = read.csv2("C:/Users/josef/Downloads/EP09 Datos.csv")
+
+# Calcular el IMC
+datos$IMC <- datos$Weight / ((datos$Height*1/100)^2)
+
+# Crear la variable dicotómica EN (estado nutricional)
+datos$EN <- ifelse(datos$IMC >= 23.2, "Sobrepeso", "No sobrepeso")
+
+
+#Ahora podemos construir un modelo de regresión logística para predecir la variable EN, de acuerdo con las siguientes instrucciones:
+set.seed(1412)
+
+# Filtrar mujeres
+mujeres <- subset(datos, Gender == 0)
+
+# Separar mujeres con "Sobrepeso" y "No sobrepeso"
+mujeres_sobrepeso <- subset(mujeres, EN == "Sobrepeso")
+mujeres_no_sobrepeso <- subset(mujeres, EN == "No sobrepeso")
+
+# Seleccionar 75 mujeres de cada grupo (75 "Sobrepeso" y 75 "No sobrepeso")
+muestra_sobrepeso <- mujeres_sobrepeso[sample(nrow(mujeres_sobrepeso), 75), ]
+muestra_no_sobrepeso <- mujeres_no_sobrepeso[sample(nrow(mujeres_no_sobrepeso), 75), ]
+
+# Combinar las muestras seleccionadas
+muestra_total <- rbind(muestra_sobrepeso, muestra_no_sobrepeso)
+
+# Mezclar la muestra total
+muestra_total <- muestra_total[sample(nrow(muestra_total)), ]
+
+# Dividir la muestra en dos conjuntos
+# 100 personas (50 con EN "Sobrepeso" y 50 con EN "No sobrepeso") para el modelo RLO
+entrenamiento <- rbind(
+  muestra_sobrepeso[1:50, ],
+  muestra_no_sobrepeso[1:50, ]
+)
+
+# 50 personas (25 con EN "Sobrepeso" y 25 con EN "No sobrepeso") para la evaluación
+evaluacion <- rbind(
+  muestra_sobrepeso[51:75, ],
+  muestra_no_sobrepeso[51:75, ]
+)
+```
+
+3. Recordar las ocho posibles variables predictoras seleccionadas de forma aleatoria en el ejercicio anterior.
+
+- Biacromial.diameter 	Diámetro biacromial (a la altura de los hombros) 
+- Biiliac.diameter 	Diámetro biiliaco (a la altura de la pelvis) 
+- Bitrochanteric.diameter 	Diámetro bitrocantéreo (a la altura de las caderas) 
+- Chest.depth 	Profundidad del pecho (entre la espina y el esternón a la altura de los pezones) 	cm
+- Chest.diameter 	Diámetro del pecho (a la altura de los pezones)
+- Elbows.diameter 	Suma de los diámetros de los codos
+- Wrists.diameter 	Suma de los diámetros de las muñecas
+- Knees.diameter 	Suma de los diámetros de las rodillas
+
+```{r}
+
+```
 
