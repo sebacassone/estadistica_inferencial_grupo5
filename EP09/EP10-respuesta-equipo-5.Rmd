@@ -1,0 +1,32 @@
+---
+title: "E11"
+author: "Jose Foitzick"
+date: "2024-08-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## E10 
+
+
+```{r }
+#Datos 9 
+datos = read.csv2("C:/Users/josef/Downloads/EP09 Datos.csv")
+
+# Calcular el IMC
+datos$IMC <- datos$Weight / ((datos$Height*1/100)^2)
+
+# Crear la variable dicotómica EN (estado nutricional)
+datos$EN <- ifelse(datos$IMC >= 23.2, "Sobrepeso", "No sobrepeso")
+
+
+#Ahora podemos construir un modelo de regresión logística para predecir la variable EN, de acuerdo con las siguientes instrucciones:
+set.seed(1412)
+
+
+
+
+```

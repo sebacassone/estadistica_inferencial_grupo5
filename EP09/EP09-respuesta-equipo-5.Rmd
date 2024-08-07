@@ -1,5 +1,10 @@
 ---
+<<<<<<< HEAD
+title: "EP08"
+author: "equipo5"
+=======
 title: "EP09"
+>>>>>>> d1f02bdb85be0574f9d59bbc4bb0b2c49d7a0886
 date: "`r Sys.Date()`"
 output: html_document
 ---
@@ -32,6 +37,25 @@ datos_prueba <- datos_filtrados[-indices_entrenamiento, ]
 ```
 
 
+<<<<<<< HEAD
+#Una vez que se obtuvieron los datos, se decidió descartar como variables predictoras, las siguientes ocho:
+#- Biacromial.diameter 	Diámetro biacromial (a la altura de los hombros) 
+#- Biiliac.diameter 	Diámetro biiliaco (a la altura de la pelvis) 
+#- Bitrochanteric.diameter 	Diámetro bitrocantéreo (a la altura de las caderas) 
+#- Chest.depth 	Profundidad del pecho (entre la espina y el esternón a la altura de los pezones) 	cm
+#- Chest.diameter 	Diámetro del pecho (a la altura de los pezones)
+#- Elbows.diameter 	Suma de los diámetros de los codos
+#- Wrists.diameter 	Suma de los diámetros de las muñecas
+#- Knees.diameter 	Suma de los diámetros de las rodillas
+
+#Luego, de las variables predictoras restantes se decidió considerar la variable predictora para el RLS #Thigh.Girth que corresponde al Grosor promedio de ambos muslos bajo el pliegue del glúteo.
+
+#Modelo RLS
+modelo1 = lm(Weight ~ Thigh.Girth, data = datos_entrenamiento)  #RLS var: Thigh
+
+# Ajustar el modelo de regresión lineal múltiple
+modelo_completo = modelo <- lm(Weight ~Biacromial.diameter + Biiliac.diameter + Bitrochanteric.diameter + Chest.depth + Chest.diameter + Elbows.diameter + Wrists.diameter + Knees.diameter + Thigh.Girth, data = datos_entrenamiento)
+=======
 Una vez que se obtuvieron los datos, se decidió descartar como variables predictoras, las siguientes ocho:
 - Biacromial.diameter 	Diámetro biacromial (a la altura de los hombros) 
 - Biiliac.diameter 	Diámetro biiliaco (a la altura de la pelvis) 
@@ -53,6 +77,7 @@ para obtener una regresión lineal múltiple.
 modelo1 <- lm(Weight ~ Thigh.Girth, data = datos_entrenamiento)  #RLS var: Thigh
 # Ajustar el modelo de regresión lineal múltiple
 modelo_completo <- lm(Weight ~Biacromial.diameter + Biiliac.diameter + Bitrochanteric.diameter + Chest.depth + Chest.diameter + Elbows.diameter + Wrists.diameter + Knees.diameter + Thigh.Girth, data = datos_entrenamiento)
+>>>>>>> d1f02bdb85be0574f9d59bbc4bb0b2c49d7a0886
 
 # Resumen de los modelos
 cat("\n\n")
@@ -66,19 +91,33 @@ cat("Modelo Completo:Regresion Lineal Multiple - Modelo completo\n")
 cat("------------------------------------------------\n")
 print(summary(modelo_completo))
 
+<<<<<<< HEAD
+
+=======
+>>>>>>> d1f02bdb85be0574f9d59bbc4bb0b2c49d7a0886
 #Evaluar variables a incorporar
 print(add1(modelo1, scope = modelo_completo, test = "F"))
 cat("\n\n")
 
+<<<<<<< HEAD
+#Agregamos la variable con menor AIC Elbows.diameter (218.84) y menor RSS(1464.2)
+modelo2 = update(modelo1, . ~ . + Elbows.diameter)
+=======
 #Agregamos la variable con menor AIC, Elbows.diameter (218.84), menor RSS(1464.2)
 modelo2 <- update(modelo1, . ~ . + Elbows.diameter)
+>>>>>>> d1f02bdb85be0574f9d59bbc4bb0b2c49d7a0886
 print(summary(modelo1))
 
 #Evaluar variables a incorporar
 print(add1(modelo2, scope = modelo_completo, test = "F"))
 
+<<<<<<< HEAD
+#Agregamos la variable con menor AIC, Chest.diameter (204.57) y menor RSS (1160.5)
+modelo3 = update(modelo2, . ~ . + Chest.diameter)
+=======
 #Agregamos la variable con menor AIC, Chest.diameter (204.57), menor RSS (1160.5)
 modelo3 <- update(modelo2, . ~ . + Chest.diameter)
+>>>>>>> d1f02bdb85be0574f9d59bbc4bb0b2c49d7a0886
 
 #Evaluar variables a incorporar 
 #En el AIC, todas las variables presentan similares AIC, aunque Knees.diameter
@@ -98,7 +137,12 @@ modelo5 <- update(modelo4, . ~ . + Biiliac.diameter)
 print(add1(modelo5, scope = modelo_completo, test = "F"))
 
 #Agregamos la variable con menor AIC, RSS y p-value Chest.depth RSS(848.51)
+<<<<<<< HEAD
+modelo6 = update(modelo5, . ~ . + Chest.depth)
+cat("Modelo final RLM")
+=======
 modelo6 <- update(modelo5, . ~ . + Chest.depth)
+>>>>>>> d1f02bdb85be0574f9d59bbc4bb0b2c49d7a0886
 print(summary(modelo6))
 ```
 
@@ -171,6 +215,39 @@ cat("Intervalo razón de covarianza: [", inferior, superior, "]\n\n", sep = "")
 print(round(resultados [sospechosos, c("distancia_Cook", "apalancamiento","covratio")], 3))
 
 cat("No se presentan datos, con distancia de Cook mayor a 1, por lo tanto no hay presencia de observaciones potencialmente problematicos \nEn apalancamiento se observa una unica situacion en que es mayor al promedio(0.1) de manera triple que seria la observacion 3, con un valor de apalancamiento del 0.367 \nY por ultimo la la razon de covarianza se observan 3 valores fuera del intervalo de covarianza [0.71 , 3], que son la observacion 84, 79 y 9, aunque no se realizaran cambios en los datos a analizar dado que, se formaria un sezgo al sobreajustar nuestros datos.")
+<<<<<<< HEAD
+
+
+cat("\n\n")
+cat("Se graficaran ambos modelos con y sin las obersaciones potencialmente problematicas,para notar si es necesario tomar acciones con tales observaciones (3, 84, 79, 9)")
+
+# Excluir las observaciones atípicas
+datos_filtrados <- datos_filtrados[-c(3, 84, 79, 9), ]
+
+# Dividir los datos en conjuntos de entrenamiento y prueba
+indices_entrenamiento = sample(1:nrow(datos_filtrados), 0.7 * nrow(datos_filtrados))
+datos_entrenamiento = datos_filtrados[indices_entrenamiento, ]
+datos_prueba = datos_filtrados[-indices_entrenamiento, ]
+
+# Ajustar el modelo de regresión lineal múltiple
+modelo_completo = lm(Weight ~ Biacromial.diameter + Biiliac.diameter + Bitrochanteric.diameter + Chest.depth + Chest.diameter + Elbows.diameter + Wrists.diameter + Knees.diameter + Thigh.Girth, data = datos_entrenamiento)
+
+# Ajustar el modelo 6 directamente
+modelo6sin = lm(Weight ~ Thigh.Girth + Elbows.diameter + Chest.diameter + Knees.diameter + Biiliac.diameter + Chest.depth, data = datos_entrenamiento)
+
+
+# Graficar los resultados del modelo con todas las observaciones
+par(mfrow=c(2, 2))
+plot(modelo6, main="Datos original")
+
+# Graficar los resultados del modelo sin observaciones atípicas
+plot(modelo6sin, main="Datos filtrados")
+
+cat("\nSe denota una mejoria en la distribución de residuos es más ajustada a la línea teórica, indicando que la normalidad de los residuos mejoran sin los datos atípicos ademas de que los residuos están mas uniformemente dispersos, lo que sugiere que la homocedasticidad mejora al eliminar los datos atípicos.En este caso, parece razonable concluir que el modelo con datos filtrados proporciona una mejor representación de la relación entre las variables, dado que los residuos son más homogéneos y se ajustan mejor a los supuestos de regresión.")
+
+
+=======
+>>>>>>> d1f02bdb85be0574f9d59bbc4bb0b2c49d7a0886
 ```
 
 No se presentan datos, con distancia de Cook mayor a 1, por lo tanto no hay presencia de observaciones potencialmente problematicos. 
@@ -178,7 +255,11 @@ En apalancamientose observa una única situacion en que es mayor al promedio(0.1
 Y por último la razón de covarianza se observan 3 valores fuera del intervalo de covarianza [0.71 , 3], que son la observacion 84, 79 y 9.
 Aunque no se realizarán cambios en los datos a analizar dado que, se formaría un sezgo al sobreajustar nuestros datos.
 
+<<<<<<< HEAD
+
+=======
 Por último se verifica las condiciones para Regresión Lineal Múltiple.
+>>>>>>> d1f02bdb85be0574f9d59bbc4bb0b2c49d7a0886
 
 ```{r}
 cat("\n\n")
