@@ -1,16 +1,26 @@
 ---
+<<<<<<< HEAD
 title: "EP08"
 author: "equipo5"
+=======
+title: "EP09"
+>>>>>>> d1f02bdb85be0574f9d59bbc4bb0b2c49d7a0886
 date: "`r Sys.Date()`"
 output: html_document
 ---
 
+Primero, comenzamos a leer archivo y lo filtramos para obtener solo las mujeres.
 
 ```{r}
 library(dplyr)
+library(car)
 
 # Leer los datos
-datos = read.csv2("C:/Users/josef/OneDrive/Escritorio/EST/estadistica_inferencial_grupo5/EP09/EP09 Datos.csv")
+nombre_archivo <- "EP09 Datos.csv"
+carpeta <- "/home/seba/Documentos/ejercicios_R/EI/estadistica_inferencial_grupo5/EP09"
+ruta <- file.path(carpeta, nombre_archivo)
+
+datos <- read.csv2(ruta)
 
 set.seed(6604)
 
@@ -19,18 +29,15 @@ datos <- datos %>% filter(datos$Gender == 0)
 
 # Se obtiene una muestra aleatoria de 100 mujeres.
 datos_filtrados <- datos %>% sample_n(100)
-datos_filtrados
-
-correlaciones = cor(datos_filtrados)
-print(correlaciones)
-
 
 # Dividir los datos en conjuntos de entrenamiento y prueba
-indices_entrenamiento = sample(1:nrow(datos_filtrados), 0.7 * nrow(datos_filtrados))
-datos_entrenamiento = datos_filtrados[indices_entrenamiento, ]
-datos_prueba = datos_filtrados[-indices_entrenamiento, ]
+indices_entrenamiento <- sample(1:nrow(datos_filtrados), 0.7 * nrow(datos_filtrados))
+datos_entrenamiento <- datos_filtrados[indices_entrenamiento, ]
+datos_prueba <- datos_filtrados[-indices_entrenamiento, ]
+```
 
 
+<<<<<<< HEAD
 #Una vez que se obtuvieron los datos, se decidió descartar como variables predictoras, las siguientes ocho:
 #- Biacromial.diameter 	Diámetro biacromial (a la altura de los hombros) 
 #- Biiliac.diameter 	Diámetro biiliaco (a la altura de la pelvis) 
@@ -48,6 +55,29 @@ modelo1 = lm(Weight ~ Thigh.Girth, data = datos_entrenamiento)  #RLS var: Thigh
 
 # Ajustar el modelo de regresión lineal múltiple
 modelo_completo = modelo <- lm(Weight ~Biacromial.diameter + Biiliac.diameter + Bitrochanteric.diameter + Chest.depth + Chest.diameter + Elbows.diameter + Wrists.diameter + Knees.diameter + Thigh.Girth, data = datos_entrenamiento)
+=======
+Una vez que se obtuvieron los datos, se decidió descartar como variables predictoras, las siguientes ocho:
+- Biacromial.diameter 	Diámetro biacromial (a la altura de los hombros) 
+- Biiliac.diameter 	Diámetro biiliaco (a la altura de la pelvis) 
+- Bitrochanteric.diameter 	Diámetro bitrocantéreo (a la altura de las caderas) 
+- Chest.depth 	Profundidad del pecho (entre la espina y el esternón a la altura de los pezones) 	cm
+- Chest.diameter 	Diámetro del pecho (a la altura de los pezones)
+- Elbows.diameter 	Suma de los diámetros de los codos
+- Wrists.diameter 	Suma de los diámetros de las muñecas
+- Knees.diameter 	Suma de los diámetros de las rodillas
+
+Luego, de las variables predictoras restantes se decidió considerar la variable predictora para el RLS Thigh.Girth que 
+corresponde al Grosor promedio de ambosmuslos bajo el pliegue del glúteo.
+
+Luego, obtenemos la Regresión Lineal Simple y luego se le agregará los predictores que se obtuvieron en el paso anterior
+para obtener una regresión lineal múltiple.
+
+```{r}
+# Comenzamos de una regresión lineal simple y luego se irán agregando variables
+modelo1 <- lm(Weight ~ Thigh.Girth, data = datos_entrenamiento)  #RLS var: Thigh
+# Ajustar el modelo de regresión lineal múltiple
+modelo_completo <- lm(Weight ~Biacromial.diameter + Biiliac.diameter + Bitrochanteric.diameter + Chest.depth + Chest.diameter + Elbows.diameter + Wrists.diameter + Knees.diameter + Thigh.Girth, data = datos_entrenamiento)
+>>>>>>> d1f02bdb85be0574f9d59bbc4bb0b2c49d7a0886
 
 # Resumen de los modelos
 cat("\n\n")
@@ -61,20 +91,33 @@ cat("Modelo Completo:Regresion Lineal Multiple - Modelo completo\n")
 cat("------------------------------------------------\n")
 print(summary(modelo_completo))
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> d1f02bdb85be0574f9d59bbc4bb0b2c49d7a0886
 #Evaluar variables a incorporar
 print(add1(modelo1, scope = modelo_completo, test = "F"))
 cat("\n\n")
 
+<<<<<<< HEAD
 #Agregamos la variable con menor AIC Elbows.diameter (218.84) y menor RSS(1464.2)
 modelo2 = update(modelo1, . ~ . + Elbows.diameter)
+=======
+#Agregamos la variable con menor AIC, Elbows.diameter (218.84), menor RSS(1464.2)
+modelo2 <- update(modelo1, . ~ . + Elbows.diameter)
+>>>>>>> d1f02bdb85be0574f9d59bbc4bb0b2c49d7a0886
 print(summary(modelo1))
 
 #Evaluar variables a incorporar
 print(add1(modelo2, scope = modelo_completo, test = "F"))
 
+<<<<<<< HEAD
 #Agregamos la variable con menor AIC, Chest.diameter (204.57) y menor RSS (1160.5)
 modelo3 = update(modelo2, . ~ . + Chest.diameter)
+=======
+#Agregamos la variable con menor AIC, Chest.diameter (204.57), menor RSS (1160.5)
+modelo3 <- update(modelo2, . ~ . + Chest.diameter)
+>>>>>>> d1f02bdb85be0574f9d59bbc4bb0b2c49d7a0886
 
 #Evaluar variables a incorporar 
 #En el AIC, todas las variables presentan similares AIC, aunque Knees.diameter
@@ -82,25 +125,36 @@ modelo3 = update(modelo2, . ~ . + Chest.diameter)
 print(add1(modelo3, scope = modelo_completo, test = "F"))
 
 #Agregamos la variable con menor RSS, Knees.diameter (1003.5) y menor p-value (0.002194 **)
-modelo4 = update(modelo3, . ~ . + Knees.diameter)
+modelo4 <- update(modelo3, . ~ . + Knees.diameter)
 
 #Evaluar variables  a incorporar
 print(add1(modelo4, scope = modelo_completo, test = "F"))
 
 #Agregamos la variable con menor AIC,RSS, y p-value Chest.depth RSS(141.097)
-modelo5 = update(modelo4, . ~ . + Biiliac.diameter)
+modelo5 <- update(modelo4, . ~ . + Biiliac.diameter)
 
 #Evaluar variables a incorporar
 print(add1(modelo5, scope = modelo_completo, test = "F"))
 
 #Agregamos la variable con menor AIC, RSS y p-value Chest.depth RSS(848.51)
+<<<<<<< HEAD
 modelo6 = update(modelo5, . ~ . + Chest.depth)
 cat("Modelo final RLM")
+=======
+modelo6 <- update(modelo5, . ~ . + Chest.depth)
+>>>>>>> d1f02bdb85be0574f9d59bbc4bb0b2c49d7a0886
 print(summary(modelo6))
-
 ```
 
-## Paso 7
+Ahora comparamos entre ellos los modelos utilizando anova.
+
+```{r}
+# Se comparan los modelos con anova
+print(anova(modelo1, modelo2, modelo3, modelo4, modelo5, modelo6))
+```
+
+Dado el P-valor = 0,0028 obtenido en el modelo 6 escogemos este modelo como el mejor modelo de regresión lineal múltiple.  
+
 ```{r}
 #Paso 7
 
@@ -161,6 +215,7 @@ cat("Intervalo razón de covarianza: [", inferior, superior, "]\n\n", sep = "")
 print(round(resultados [sospechosos, c("distancia_Cook", "apalancamiento","covratio")], 3))
 
 cat("No se presentan datos, con distancia de Cook mayor a 1, por lo tanto no hay presencia de observaciones potencialmente problematicos \nEn apalancamiento se observa una unica situacion en que es mayor al promedio(0.1) de manera triple que seria la observacion 3, con un valor de apalancamiento del 0.367 \nY por ultimo la la razon de covarianza se observan 3 valores fuera del intervalo de covarianza [0.71 , 3], que son la observacion 84, 79 y 9, aunque no se realizaran cambios en los datos a analizar dado que, se formaria un sezgo al sobreajustar nuestros datos.")
+<<<<<<< HEAD
 
 
 cat("\n\n")
@@ -191,23 +246,95 @@ plot(modelo6sin, main="Datos filtrados")
 cat("\nSe denota una mejoria en la distribución de residuos es más ajustada a la línea teórica, indicando que la normalidad de los residuos mejoran sin los datos atípicos ademas de que los residuos están mas uniformemente dispersos, lo que sugiere que la homocedasticidad mejora al eliminar los datos atípicos.En este caso, parece razonable concluir que el modelo con datos filtrados proporciona una mejor representación de la relación entre las variables, dado que los residuos son más homogéneos y se ajustan mejor a los supuestos de regresión.")
 
 
+=======
+>>>>>>> d1f02bdb85be0574f9d59bbc4bb0b2c49d7a0886
 ```
 
+No se presentan datos, con distancia de Cook mayor a 1, por lo tanto no hay presencia de observaciones potencialmente problematicos. 
+En apalancamientose observa una única situacion en que es mayor al promedio(0.1) de manera triple que seria la observacion 3, con un valor de apalancamiento del 0.367. 
+Y por último la razón de covarianza se observan 3 valores fuera del intervalo de covarianza [0.71 , 3], que son la observacion 84, 79 y 9.
+Aunque no se realizarán cambios en los datos a analizar dado que, se formaría un sezgo al sobreajustar nuestros datos.
 
+<<<<<<< HEAD
 
+=======
+Por último se verifica las condiciones para Regresión Lineal Múltiple.
+>>>>>>> d1f02bdb85be0574f9d59bbc4bb0b2c49d7a0886
 
 ```{r}
-library(dplyr)
+cat("\n\n")
+cat("Se graficaran ambos modelos con y sin las obersaciones potencialmente problematicas,para notar si es necesario tomar acciones con tales observaciones (3, 84, 79, 9)")
 
-# Leer los datos
-datos = read.csv2("/home/seba/Documentos/ejercicios_R/EI/estadistica_inferencial_grupo5/EP09 Datos.csv")
+# Excluir las observaciones atípicas
+datos_filtrados <- datos_filtrados[-c(3, 84, 79, 9), ]
 
-set.seed(6604)
+# Dividir los datos en conjuntos de entrenamiento y prueba
+indices_entrenamiento = sample(1:nrow(datos_filtrados), 0.7 * nrow(datos_filtrados))
+datos_entrenamiento = datos_filtrados[indices_entrenamiento, ]
+datos_prueba = datos_filtrados[-indices_entrenamiento, ]
 
-# Se filtran a las mujeres
-datos <- datos %>% filter(datos$Gender == 0)
+# Ajustar el modelo de regresión lineal múltiple
+modelo_completo = lm(Weight ~ Biacromial.diameter + Biiliac.diameter + Bitrochanteric.diameter + Chest.depth + Chest.diameter + Elbows.diameter + Wrists.diameter + Knees.diameter + Thigh.Girth, data = datos_entrenamiento)
 
-# Se obtiene una muestra aleatoria de 100 mujeres.
-datos_filtrados <- datos %>% sample_n(100)
-datos_filtrados
+# Ajustar el modelo 6 directamente
+modelo6sin = lm(Weight ~ Thigh.Girth + Elbows.diameter + Chest.diameter + Knees.diameter + Biiliac.diameter + Chest.depth, data = datos_entrenamiento)
+
+
+# Graficar los resultados del modelo con todas las observaciones
+par(mfrow=c(2, 2))
+plot(modelo6, main="Datos original")
+
+# Graficar los resultados del modelo sin observaciones atípicas
+plot(modelo6sin, main="Datos filtrados")
 ```
+
+Se denota una mejoría en la distribución de residuos es más ajustada a la línea teórica, indicando que la normalidad de los residuos mejoran sin los datos atípicos además de que los residuos están mas uniformemente dispersos, lo que sugiere que la homocedasticidad mejora al eliminar los datos atípicos. En este caso, parece razonable concluir que el modelo con datos filtrados proporciona una mejor representación de la relación entre las variables, dado que los residuos son más homogéneos y se ajustan mejor a los supuestos de regresión.
+
+```{r}
+# Comprobar independencia de los residuos
+cat("Prueba de Durbi-Watson para autocorrelaciones ")
+cat("entre errores: \n")
+print(durbinWatsonTest(modelo6sin))
+
+# Comprobar normalidad de los residuos
+cat("Prueba de Shapiro-Wilk para normalidad de los errores: \n")
+print(shapiro.test(modelo6sin$residuals))
+
+# Comprobar homocedasticidad de los residuos
+cat("Prueba de homostacidad para los residuos: \n")
+print(ncvTest(modelo6sin))
+
+# Comprobar la multicolinealidad
+vifs <- vif(modelo6sin)
+cat("\nVerificar la multicolinealidad: \n")
+cat("VIFs: \n")
+print(vifs)
+
+# Tolerancias
+tolerancias <- 1/vifs
+cat("Tolerancias: \n")
+print(tolerancias)
+
+# VIF medio
+cat("VIF medio: \n")
+print(mean(vifs))
+```
+
+Dado los resultados en la prueba de independencia de los residuos, obtenemos que con la prueba de Durbin-Watson tenemos un p-value = 0.876 por lo que podemos concluir con esto que los residuos son independientes. Luego, tenemos que los residuos obtenidos con un p-value = 0.4378 concluimos que los datos siguen una distribución normal. Con respecto a la homocedasticidad de los residuos tenemos que p-value = 0.4003 por lo que se puede concluir que la condición de homocedasticidad se cumple. Finalmente, con respecto a la condición de Multicolinealidad se tiene que el VIF se tiene que el los predictores de   Thigh.Girth y Knees.diameter podrían tener un sesgo importante, con respecto a la tolerancia tenemos que todos los estadísticos no parecen ser preocupantes. Además, el VIF promedio indica que podría haber algo de sesgo en el modelo.
+Luego, se evalua el poder predictivo del modelo con los datos no utilizados para contruirlo.
+
+```{r}
+# Realizar predicciones con el conjunto de prueba
+predicciones <- predict(modelo6sin, newdata = datos_prueba)
+
+# Calcular el error cuadrático medio para el conjunto de entrenamiento y de prueba
+mse_entrenamiento <- mean(modelo6sin$residuals**2)
+error <- datos_prueba$Weight - predicciones
+mse_prueba <- mean(error**2)
+
+# Imprime los resultados
+cat("Error cuadrático medio para el conjunto de entrenamiento: ", mse_entrenamiento, "\n")
+cat("Error cuadrático medio para el conjunto de prueba: ", mse_prueba, "\n")
+```
+
+La diferencia entre el MSE de entrenamiento y prueba no es extremadamente grande, lo que sugiere que el modelo no está sobreajustado (overfitted) de manera severa. Por lo que este modelo si podría ser generalizable.
