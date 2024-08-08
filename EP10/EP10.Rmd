@@ -71,10 +71,66 @@ evaluacion <- rbind(
 - Wrists.diameter 	Suma de los diámetros de las muñecas
 - Knees.diameter 	Suma de los diámetros de las rodillas
 
-4. Se construye el modelo de regresión logística
+4. Se construye el modelo sde regresión logística simple.
 
 ```{r}
-modelo <- glm(EN ~ Waist.Girth, family = binomial(link = "logit"), entrenamiento)
-print(summary(modelo))
+modelo_1 <- glm(EN ~ Waist.Girth, family = binomial(link = "logit"), entrenamiento)
+print(summary(modelo_1))
+```
+
+5. Se comienza a construir el modelo de regresión logística múltiple.
+```{r}
+modelo_nulo <- glm(EN ~ 1, family = binomial(link = "logit"), entrenamiento)
+modelo_completo <- glm(EN ~ Waist.Girth + Biacromial.diameter + Biiliac.diameter + Bitrochanteric.diameter + Chest.depth + Chest.diameter + Elbows.diameter + Wrists.diameter + Knees.diameter, family = binomial(link = "logit"), entrenamiento)
+
+# Resumen de los modelos
+cat("\n\n")
+cat("Modelo 1:Regresion Regresión Logística, modelo nulo\n")
+cat("------------------------------------------------\n")
+print(summary(modelo_nulo))
+
+
+cat("\n\n")
+cat("Modelo Completo:Regresion Logística Multiple - Modelo completo\n")
+cat("------------------------------------------------\n")
+print(summary(modelo_completo))
+
+#Evaluar variables a incorporar
+print(add1(modelo_nulo, scope = modelo_completo, test = "Chisq"))
+cat("\n\n")
+
+# Se selecciona Waight.Girth como variable predictora a incorporar dado que tiene el menor p-value.
+modelo1 <- update(modelo_nulo, . ~ . + Waist.Girth)
+
+# Luego se vuelve a evaluar una nueva variable predictora a incorporar
+print(add1(modelo1, scope = modelo_completo, test = "Chisq"))
+
+# Se elecciona la variable Chest.depth dado que tiene el menor p-value y se incorpora al modelo.
+modelo2 <- update(modelo1, . ~ . + Chest.depth)
+print(add1(modelo2, scope = modelo_completo, test = "Chisq"))
+
+# Se selecciona la variable Wrists.diameter dado que tiene el menor p-value y se incorpora al modelo.
+modelo3 <- update(modelo2, . ~ . + Wrists.diameter)
+print(add1(modelo3, scope = modelo_completo, test = "Chisq"))
+
+# Se selecciona la variable Knees.diameter dado que tiene el menor p-value y se incorpora al modelo.
+modelo4 <- update(modelo3, . ~ . + Knees.diameter)
+print(add1(modelo4, scope = modelo_completo, test = "Chisq"))
+
+cat("Modelo final RLM")
+print(summary(modelo4))
+```
+
+Luego comparamos entre ellos los modelos utilizando anova.
+```{r}
+resultado <- anova(modelo_nulo, modelo1, modelo2, modelo3, modelo4, modelo_completo)
+print(resultado)
+```
+Con esto obtenemos que el modelo final es significativo con un p-value = 0.031947 con un 95% de confiaza. Podemos observar que del último modelo al completo no es significativo dado que es mayor a la significancia obtenida de un 95% de confianza siendo mayor a 0,05.
+
+Ahora, se evalua las condiciones para que el modelo obtenido del paso anterior es válido como regresión lineal múltiple.
+
+```{r}
+
 ```
 
