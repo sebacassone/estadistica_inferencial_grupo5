@@ -9,11 +9,9 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-library(psych)
-library(car)
+library(ggpubr)
 library(ggplot2)
-library(dplyr)
-library(tidyr)
+library(pROC)
 ```
 
 Comenzamos leyendo el archivo.
@@ -61,8 +59,8 @@ mujeres_sobrepeso <- subset(mujeres, EN == 1)
 mujeres_no_sobrepeso <- subset(mujeres, EN == 0)
 
 # Seleccionar 75 mujeres de cada grupo (75 "Sobrepeso" y 75 "No sobrepeso")
-muestra_sobrepeso <- mujeres_sobrepeso[sample(nrow(mujeres_sobrepeso), 75), ]
-muestra_no_sobrepeso <- mujeres_no_sobrepeso[sample(nrow(mujeres_no_sobrepeso), 75), ]
+muestra_sobrepeso <- mujeres_sobrepeso[sample(nrow(mujeres_sobrepeso), 75, replace = FALSE), ]
+muestra_no_sobrepeso <- mujeres_no_sobrepeso[sample(nrow(mujeres_no_sobrepeso), 75, replace = FALSE), ]
 
 # Dividir la muestra en dos conjuntos
 # 100 personas (50 con EN "Sobrepeso" y 50 con EN "No sobrepeso") para el modelo RLO
@@ -114,26 +112,26 @@ cat("------------------------------------------------\n")
 print(summary(modelo_completo))
 
 #Evaluar variables a incorporar
-print(add1(modelo_nulo, scope = modelo_completo, test = "Chisq"))
+print(add1(modelo_nulo, scope = modelo_completo, test = "LRT"))
 cat("\n\n")
 
 # Se selecciona Waight.Girth como variable predictora a incorporar dado que tiene el menor p-value.
 modelo1 <- update(modelo_nulo, . ~ . + Waist.Girth)
 
 # Luego se vuelve a evaluar una nueva variable predictora a incorporar
-print(add1(modelo1, scope = modelo_completo, test = "Chisq"))
+print(add1(modelo1, scope = modelo_completo, test = "LRT"))
 
 # Se elecciona la variable Chest.depth dado que tiene el menor p-value y se incorpora al modelo.
 modelo2 <- update(modelo1, . ~ . + Chest.depth)
-print(add1(modelo2, scope = modelo_completo, test = "Chisq"))
+print(add1(modelo2, scope = modelo_completo, test = "LRT"))
 
 # Se selecciona la variable Wrists.diameter dado que tiene el menor p-value y se incorpora al modelo.
 modelo3 <- update(modelo2, . ~ . + Wrists.diameter)
-print(add1(modelo3, scope = modelo_completo, test = "Chisq"))
+print(add1(modelo3, scope = modelo_completo, test = "LRT"))
 
 # Se selecciona la variable Knees.diameter dado que tiene el menor p-value y se incorpora al modelo.
 modelo4 <- update(modelo3, . ~ . + Knees.diameter)
-print(add1(modelo4, scope = modelo_completo, test = "Chisq"))
+print(add1(modelo4, scope = modelo_completo, test = "LRT"))
 
 cat("Modelo final RLM")
 print(summary(modelo4))
@@ -147,17 +145,14 @@ print(resultado)
 Con esto obtenemos que el modelo final es significativo con un p-value = 0.031947 con un 95% de confiaza. Podemos observar que del último modelo al completo no es significativo dado que es mayor a la significancia obtenida de un 95% de confianza siendo mayor a 0,05.
 
 
-El nivel de ajuste se comprobo en cada iteración analizando el p-value y AIC, ahora continuamos con la generalidad del modelo.
+Ahora se verifica la generalidad del modelo obtenido. Primero, verificamos el modelo de regresión logística simple.
 ```{r}
 #Generalidad
-
 #Reducir a matriz de datos que solo contenga los predictores
 predictores = names(coef(modelo4)) [-1]
 entrenamiento = mujeres[,c(predictores, "EN")]
-
 #Construir una matriz de datos con la respuesta predicha, los residuos y estadisiticas
 #para evaluar la influencia de cada una de las 70 observaciones
-
 resultados = data.frame(respuesta_predicha = fitted(modelo4))
 resultados[["residuos_estandarizados"]] = rstandard(modelo4)
 resultados[["residuos_estudiantizados"]] = rstudent(modelo4)
@@ -166,54 +161,242 @@ resultados[["dfbeta"]] = dfbeta(modelo4)
 resultados[["dffit"]] = dffits(modelo4)
 resultados[["apalancamiento"]] = hatvalues(modelo4)
 resultados[["covratio"]] = covratio(modelo4)
-
-
 cat("Identificacion de valores atipicos : \n")
 #Observaciones por fuera del 95% esperado
-
 sospechosos1 <- which (abs (resultados [["residuos_estandarizados"]]) > 1.96)
-
 cat("- Residuos estandarizados fuera del 95% esperado:", sospechosos1, "\n")
-
 # Observaciones con distancia de Cook mayor a uno.
 sospechosos2 <- which(resultados [["cooks.distance"]]> 1)
-
 cat("- Residuos con una distancia de Cook alta:", sospechosos2, "\n")
 # Observaciones con apalancamiento mayor igual al doble del # apalancamiento promedio.
 apal_medio <- (ncol(mujeres) + 1) / nrow(mujeres)
-
-
 sospechosos3 <- which (resultados [["apalancamiento"]] > 2 * apal_medio)
 cat ("Residuos con apalancamiento fuera de rango:",sospechosos3, "\n")
-
 # Observaciones con DFBeta mayor o igual a 1.
 sospechosos4 <- which(apply(resultados [["dfbeta"]] >= 1, 1, any)) 
 names (sospechosos4) <- NULL
 cat("Residuos con DFBeta >= 1: ",sospechosos4, "\n")
-
 # Observaciones con razón de covarianza fuera de rango. 
 inferior <- 1 - 3 * apal_medio
 superior <- 1 + 3 * apal_medio
 sospechosos5 <- which (resultados [["covratio"]] < inferior |
                          resultados [["covratio"]]> superior)
 cat("- Residuos con razón de covarianza fuera de rango: ", sospechosos5, "\n")
-
-
 #Resumen de valores sospechosos.
 sospechosos <- c(sospechosos1, sospechosos2, sospechosos3, sospechosos4, sospechosos5)
 sospechosos <- sort (unique (sospechosos))
 cat ("\nResumen de valores sospechosos: \n")
 cat ("Apalancamiento promedio: ", apal_medio, "\n")
-
 cat("Intervalo razón de covarianza: [", inferior, superior, "]\n\n", sep = "")
 print(round(resultados [sospechosos, c("distancia_Cook", "apalancamiento","covratio")], 3))
-
 cat("En el analisis de Generalidad se revisan las siguientes estadísticas de influencia como la distancia de Cook, el DFBeta y las estadísticas de apalancamiento \n1. La distancia de Cook no hay ninguna observacion que sea mayor o igual a 1. \n2.Se presentan 8 obseraciones son DFbeta mayor a 1 (14 24 47 50 67 83 87 96 ) \n3.En apalancamiento solo hay 2 observaciones fuera del rango (34 y 47)")
-
 cat("Al eliminar las observaciones identidicas, se procovaa un sobreajuste del modelo afectando a las observaciones restantes. Esto podría causar que cualquier pequeña variabilidad en los datos tenga un impacto mayor en el modelo, por lo cual se mantiene el modelo 4. (Al intentar borrar observaciones y probar el modelo generaba mas datos problematicos)")
 ```
 
-Evaluación del poder predictivo
+Ahora verificamos la generalidad del modelo de regresión logística simple.
+```{r}
+#Generalidad
+#Reducir a matriz de datos que solo contenga los predictores
+predictores = names(coef(modelo_1)) [-1]
+entrenamiento = mujeres[,c(predictores, "EN")]
+#Construir una matriz de datos con la respuesta predicha, los residuos y estadisiticas
+#para evaluar la influencia de cada una de las 70 observaciones
+resultados = data.frame(respuesta_predicha = fitted(modelo_1))
+resultados[["residuos_estandarizados"]] = rstandard(modelo_1)
+resultados[["residuos_estudiantizados"]] = rstudent(modelo_1)
+resultados[["distancia_Cook"]] = cooks.distance(modelo_1)
+resultados[["dfbeta"]] = dfbeta(modelo_1)
+resultados[["dffit"]] = dffits(modelo_1)
+resultados[["apalancamiento"]] = hatvalues(modelo_1)
+resultados[["covratio"]] = covratio(modelo_1)
+cat("Identificacion de valores atipicos : \n")
+#Observaciones por fuera del 95% esperado
+sospechosos1 <- which (abs (resultados [["residuos_estandarizados"]]) > 1.96)
+cat("- Residuos estandarizados fuera del 95% esperado:", sospechosos1, "\n")
+# Observaciones con distancia de Cook mayor a uno.
+sospechosos2 <- which(resultados [["cooks.distance"]]> 1)
+cat("- Residuos con una distancia de Cook alta:", sospechosos2, "\n")
+# Observaciones con apalancamiento mayor igual al doble del # apalancamiento promedio.
+apal_medio <- (ncol(mujeres) + 1) / nrow(mujeres)
+sospechosos3 <- which (resultados [["apalancamiento"]] > 2 * apal_medio)
+cat ("Residuos con apalancamiento fuera de rango:",sospechosos3, "\n")
+# Observaciones con DFBeta mayor o igual a 1.
+sospechosos4 <- which(apply(resultados [["dfbeta"]] >= 1, 1, any)) 
+names (sospechosos4) <- NULL
+cat("Residuos con DFBeta >= 1: ",sospechosos4, "\n")
+# Observaciones con razón de covarianza fuera de rango. 
+inferior <- 1 - 3 * apal_medio
+superior <- 1 + 3 * apal_medio
+sospechosos5 <- which (resultados [["covratio"]] < inferior |
+                         resultados [["covratio"]]> superior)
+cat("- Residuos con razón de covarianza fuera de rango: ", sospechosos5, "\n")
+#Resumen de valores sospechosos.
+sospechosos <- c(sospechosos1, sospechosos2, sospechosos3, sospechosos4, sospechosos5)
+sospechosos <- sort (unique (sospechosos))
+cat ("\nResumen de valores sospechosos: \n")
+cat ("Apalancamiento promedio: ", apal_medio, "\n")
+cat("Intervalo razón de covarianza: [", inferior, superior, "]\n\n", sep = "")
+print(round(resultados [sospechosos, c("distancia_Cook", "apalancamiento","covratio")], 3))
+cat("En el analisis de Generalidad se revisan las siguientes estadísticas de influencia como la distancia de Cook, el DFBeta y las estadísticas de apalancamiento \n1. La distancia de Cook no hay ninguna observacion que sea mayor o igual a 1. \n2.Se presentan 8 obseraciones son DFbeta mayor a 1 (14 24 47 50 67 83 87 96 ) \n3.En apalancamiento solo hay 2 observaciones fuera del rango (34 y 47)")
+cat("Al eliminar las observaciones identidicas, se procovaa un sobreajuste del modelo afectando a las observaciones restantes. Esto podría causar que cualquier pequeña variabilidad en los datos tenga un impacto mayor en el modelo, por lo cual se mantiene el modelo 4. (Al intentar borrar observaciones y probar el modelo generaba mas datos problematicos)")
+```
+
+Luego, verificamos las condiciones para que el modelo obtenido del paso anterior es válido como regresión lineal múltiple.
+```{r}
+#Condiciones
+# Verificar linealidad con los predictores
+logit <- log(fitted(modelo4) / (1 - fitted(modelo4)))
+
+# Graficar el logit contra un predictor continuo
+plot(entrenamiento$Waist.Girth, logit)
+abline(lm(logit ~ entrenamiento$Waist.Girth), col = "red")
+plot(entrenamiento$Chest.depth, logit)
+abline(lm(logit ~ entrenamiento$Chest.depth), col = "blue")
+plot(entrenamiento$Wrists.diameter, logit)
+abline(lm(logit ~ entrenamiento$Wrists.diameter), col = "yellow")
+plot(entrenamiento$Knees.diameter, logit)
+abline(lm(logit ~ entrenamiento$Knees.diameter), col = "green")
+
+#2. los residuos deben ser independientes entre si
+# Verificar independencia de los residuos
+cat("\nVerificación de independencia de los residuos\n")
+cat("--------------------------------------------------\n")
+print(durbinWatsonTest(modelo4))
+```
+Con esto obtenemos que la relación lineal entre el logit y los predictores indica que la suposición de linealidad es razonable. Sin embargo, el valor de la autocorrelación es 0.3896163. Esto sugiere que existe una correlación positiva moderada entre los residuos consecutivos. En otras palabras, los residuos de una observación están moderadamente correlacionados con los residuos de la observación siguiente. Esto podría indicar que el modelo no es capaz de capturar toda la información relevante en los datos.
+
+Ahora verificamos las condiciones de la regresión logística simple.
+
+```{r}
+#Condiciones
+# Verificar linealidad con los predictores
+logit <- log(fitted(modelo_1) / (1 - fitted(modelo_1)))
+
+# Graficar el logit contra un predictor continuo
+plot(entrenamiento$Waist.Girth, logit)
+abline(lm(logit ~ entrenamiento$Waist.Girth), col = "red")
+
+#2. los residuos deben ser independientes entre si
+# Verificar independencia de los residuos
+cat("\nVerificación de independencia de los residuos\n")
+cat("--------------------------------------------------\n")
+print(durbinWatsonTest(modelo4))
+
+```
+Con esto obtenemos que la relación lineal entre el logit y los predictores indica que la suposición de linealidad es razonable. Sin embargo, el valor de la autocorrelación es 0.4896082. Esto sugiere que existe una correlación positiva moderada entre los residuos consecutivos. En otras palabras, los residuos de una observación están moderadamente correlacionados con los residuos de la observación siguiente. Esto podría indicar que el modelo no es capaz de capturar toda la información relevante en los datos.
+
+El nivel de ajuste se comprobo en cada iteración analizando el p-value y AIC utilizando la prueba Chi-Cuadrado (LRT) debido a que en la regresión logística al comparar modelos, la diferencia de estos siguen asintóticamente una distribución Chi-Cuadrado lo que permite calcular el nivel de significación con la prueba LRT.
+Ahora continuamos con la generalidad del modelo y lo evaluamos.
+Primero con el conjunto de entrenamiento.
+
+```{r}
+# Evaluamos el modelo con el conjunto de prueba
+probs_e <- predict(modelo4, entrenamiento, type = "response")
+
+# Calculamos la curva ROC y el AUC
+ROC_e <- roc(entrenamiento[["EN"]], probs_e)
+auc_value <- auc(ROC_e)  # Obtener el valor del AUC
+
+# Graficamos la curva ROC
+g_roc_e <- ggroc(ROC_e, color = "red") +
+  geom_segment(aes(x = 1, xend = 0, y = 0, yend = 1), linetype = "dashed") +
+  annotate("text", x = 0.3, y = 0.3, label = sprintf("AUC = %.2f", auc_value), size = 5, color = "black") +
+  theme_pubr() +
+  labs(title = "Curva ROC", x = "Tasa de Falsos Positivos (1 - Especificidad)", y = "Tasa de Verdaderos Positivos (Sensibilidad)")
+
+# Mostrar el gráfico
+print(g_roc_e)
+```
+
+Ahora con el conjunto de prueba de regresión lineal múltiple.
+
+```{r}
+# Evaluamos el modelo con el conjunto de prueba
+probs_e <- predict(modelo4, evaluacion, type = "response")
+
+# Calculamos la curva ROC y el AUC
+ROC_e <- roc(evaluacion[["EN"]], probs_e)
+auc_value <- auc(ROC_e)  # Obtener el valor del AUC
+
+# Graficamos la curva ROC
+g_roc_e <- ggroc(ROC_e, color = "red") +
+  geom_segment(aes(x = 1, xend = 0, y = 0, yend = 1), linetype = "dashed") +
+  annotate("text", x = 0.3, y = 0.3, label = sprintf("AUC = %.2f", auc_value), size = 5, color = "black") +
+  theme_pubr() +
+  labs(title = "Curva ROC", x = "Tasa de Falsos Positivos (1 - Especificidad)", y = "Tasa de Verdaderos Positivos (Sensibilidad)")
+
+# Mostrar el gráfico
+print(g_roc_e)
+```
+
+Con esto podemos observar que el AUC (área bajo la curva) en la curva ROC tanto en el conjunto de entrenamiento como de prueba.
+Hacemos el mismo procedimiento para la regresión logística simple.
+
+```{r}
+# Evaluamos el modelo con el conjunto de prueba
+probs_e <- predict(modelo_1, entrenamiento, type = "response")
+
+# Calculamos la curva ROC y el AUC
+ROC_e <- roc(entrenamiento[["EN"]], probs_e)
+auc_value <- auc(ROC_e)  # Obtener el valor del AUC
+
+# Graficamos la curva ROC
+g_roc_e <- ggroc(ROC_e, color = "red") +
+  geom_segment(aes(x = 1, xend = 0, y = 0, yend = 1), linetype = "dashed") +
+  annotate("text", x = 0.3, y = 0.3, label = sprintf("AUC = %.2f", auc_value), size = 5, color = "black") +
+  theme_pubr() +
+  labs(title = "Curva ROC", x = "Tasa de Falsos Positivos (1 - Especificidad)", y = "Tasa de Verdaderos Positivos (Sensibilidad)")
+
+# Mostrar el gráfico
+print(g_roc_e)
+```
+
+```{r}
+# Evaluamos el modelo con el conjunto de prueba
+probs_e <- predict(modelo_1, evaluacion, type = "response")
+
+# Calculamos la curva ROC y el AUC
+ROC_e <- roc(evaluacion[["EN"]], probs_e)
+auc_value <- auc(ROC_e)  # Obtener el valor del AUC
+
+# Graficamos la curva ROC
+g_roc_e <- ggroc(ROC_e, color = "red") +
+  geom_segment(aes(x = 1, xend = 0, y = 0, yend = 1), linetype = "dashed") +
+  annotate("text", x = 0.3, y = 0.3, label = sprintf("AUC = %.2f", auc_value), size = 5, color = "black") +
+  theme_pubr() +
+  labs(title = "Curva ROC", x = "Tasa de Falsos Positivos (1 - Especificidad)", y = "Tasa de Verdaderos Positivos (Sensibilidad)")
+
+# Mostrar el gráfico
+print(g_roc_e)
+```
+
+Con esto, podemos dar cuenta que el AUC (área bajo la curva) del conjunto de entranamiento como de prueba son distintos. Por lo que se seguirá con la evaluación del poder predictivo.
+
+Evaluación del poder predictivo del conjunto de entrenamiento de regresión logística múltiple.
+```{r}
+# Realizar predicciones sobre el conjunto de evaluación
+probabilidades <- predict(modelo4, newdata = entrenamiento, type = "response")
+
+# Convertir las probabilidades en predicciones binarias utilizando un umbral de 0.5
+predicciones <- ifelse(probabilidades >= 0.5, 1, 0)
+
+# Crear una matriz de confusión
+matriz_confusion <- table(Predicción = predicciones, Realidad = entrenamiento$EN)
+print(matriz_confusion)
+
+# Calcular Sensibilidad
+sensibilidad <- matriz_confusion[2, 2] / sum(matriz_confusion[, 2])
+cat("Sensibilidad: ", round(sensibilidad, 3), "\n")
+
+# Calcular Especificidad
+especificidad <- matriz_confusion[1, 1] / sum(matriz_confusion[, 1])
+cat("Especificidad: ", round(especificidad, 3), "\n")
+
+
+cat("El modelo es capaz de identificar correctamente el 90% de las personas con sobrepeso (verdaderos positivos) y El modelo identifica correctamente el 92% de las personas sin sobrepeso (verdaderos negativos). Ambos valores son altos lo que indica respectivamente que el modelo es efectivo en detectar observaciones pertencientes a la clase positiva como a la clase negativa. ")
+```
+
+Evaluación del poder predictivo con el conjunto de prueba del modelo de regresión múltiple
 ```{r}
 # Realizar predicciones sobre el conjunto de evaluación
 probabilidades <- predict(modelo4, newdata = evaluacion, type = "response")
@@ -236,22 +419,54 @@ cat("Especificidad: ", round(especificidad, 3), "\n")
 
 cat("El modelo es capaz de identificar correctamente el 92% de las personas con sobrepeso (verdaderos positivos) y El modelo identifica correctamente el 84% de las personas sin sobrepeso (verdaderos negativos). Ambos valores son altos lo que indica respectivamente que el modelo es efectivo en detectar observaciones pertencientes a la clase positiva como a la clase negativa. ")
 ```
+Podemos observar ue el modelo tiene una capacidad sólida para clasificar tanto a personas con sobrepeso (positivos) como a personas sin sobrepeso (negativos) en ambos conjuntos de datos (entrenamiento y prueba), aunque la especifidad en el conjunto de prueba es más bajo puede deberse a variaciones en los datos entre los conjuntos de entrenamiento y prueba.
 
-
-
-Ahora, se evalua las condiciones para que el modelo obtenido del paso anterior es válido como regresión lineal múltiple.
+Ahora, realizamos el mismo procedimiento para el modelo de regresión logística simple.
 
 ```{r}
-#Condiciones
-# Verificar linealidad con los predictores
+# Realizar predicciones sobre el conjunto de evaluación
+probabilidades <- predict(modelo_1, newdata = entrenamiento, type = "response")
+
+# Convertir las probabilidades en predicciones binarias utilizando un umbral de 0.5
+predicciones <- ifelse(probabilidades >= 0.5, 1, 0)
+
+# Crear una matriz de confusión
+matriz_confusion <- table(Predicción = predicciones, Realidad = entrenamiento$EN)
+print(matriz_confusion)
+
+# Calcular Sensibilidad
+sensibilidad <- matriz_confusion[2, 2] / sum(matriz_confusion[, 2])
+cat("Sensibilidad: ", round(sensibilidad, 3), "\n")
+
+# Calcular Especificidad
+especificidad <- matriz_confusion[1, 1] / sum(matriz_confusion[, 1])
+cat("Especificidad: ", round(especificidad, 3), "\n")
 
 
-
-#2. los residuos deben ser independientes entre si
-# Verificar independencia de los residuos
-cat("\nVerificación de independencia de los residuos\n")
-cat("--------------------------------------------------\n")
-print(durbinWatsonTest(modelo4))
-
+cat("El modelo es capaz de identificar correctamente el 84% de las personas con sobrepeso (verdaderos positivos) y El modelo identifica correctamente el 84% de las personas sin sobrepeso (verdaderos negativos). Ambos valores son altos lo que indica respectivamente que el modelo es efectivo en detectar observaciones pertencientes a la clase positiva como a la clase negativa. ")
 ```
 
+Evaluación del poder predictivo con el conjunto de prueba del modelo de regresión múltiple
+```{r}
+# Realizar predicciones sobre el conjunto de evaluación
+probabilidades <- predict(modelo_1, newdata = evaluacion, type = "response")
+
+# Convertir las probabilidades en predicciones binarias utilizando un umbral de 0.5
+predicciones <- ifelse(probabilidades >= 0.5, 1, 0)
+
+# Crear una matriz de confusión
+matriz_confusion <- table(Predicción = predicciones, Realidad = evaluacion$EN)
+print(matriz_confusion)
+
+# Calcular Sensibilidad
+sensibilidad <- matriz_confusion[2, 2] / sum(matriz_confusion[, 2])
+cat("Sensibilidad: ", round(sensibilidad, 3), "\n")
+
+# Calcular Especificidad
+especificidad <- matriz_confusion[1, 1] / sum(matriz_confusion[, 1])
+cat("Especificidad: ", round(especificidad, 3), "\n")
+
+
+cat("El modelo es capaz de identificar correctamente el 92% de las personas con sobrepeso (verdaderos positivos) y El modelo identifica correctamente el 84% de las personas sin sobrepeso (verdaderos negativos). Ambos valores son altos lo que indica respectivamente que el modelo es efectivo en detectar observaciones pertencientes a la clase positiva como a la clase negativa. ")
+```
+Con esto, podemos observar que el modelo de regresión logística simple tiene una capacidad sólida para clasificar tanto a personas con sobrepeso (positivos) como a personas sin sobrepeso (negativos) en ambos conjuntos de datos (entrenamiento y prueba), aunque la especifidad en el conjunto de prueba es más bajo puede deberse a variaciones en los datos entre los conjuntos de entrenamiento y prueba.
