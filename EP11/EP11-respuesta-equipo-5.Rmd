@@ -1,0 +1,270 @@
+---
+title: "EP11"
+author: ""
+date: "2024-08-12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Enunciado
+
+Para este ejercicio usaremos los datos de medidas anatómicas recolectados por Heinz et al. (2003) que ya hemos utilizado en los ejercicios prácticos anteriores (disponibles en el archivo "EP09 Datos.csv"), con la adición de las variables IMC y EN consideradas en el ejercicio práctico anterior.
+
+# Pregunta 1
+Definir la semilla a utilizar, que corresponde a los primeros cinco dígitos del RUN del integrante de mayor edad del equipo.
+
+```{r}
+library(dplyr)
+set.seed(20761)
+```
+
+
+# Pregunta 2
+Seleccionar una muestra de 100 personas, asegurando que la mitad tenga estado nutricional “sobrepeso” y la otra mitad “no sobrepeso”.
+
+```{r}
+# Leer los datos
+nombre_archivo <- "EP09 Datos.csv"
+carpeta <- "/home/seba/Documentos/ejercicios_R/EI/estadistica_inferencial_grupo5/EP11"
+ruta <- file.path(carpeta, nombre_archivo)
+datos <- read.csv2(ruta, stringsAsFactors = TRUE)
+```
+
+Una vez leído los datos, se procede a generar las muestras requeridas.
+```{r}
+# Calcular el IMC
+datos$IMC <- datos$Weight / ((datos$Height*1/100)^2)
+
+
+# Crear la variable dicotómica EN (estado nutricional)
+datos$EN <- ifelse(datos$IMC >= 23.2, 1, 0)
+
+# Separar personas con "Sobrepeso" y "No sobrepeso"
+personas_sobrepeso <- subset(datos, EN == 1)
+personas_no_sobrepeso <- subset(datos, EN == 0)
+
+# Seleccionar 75 mujeres de cada grupo (75 "Sobrepeso" y 75 "No sobrepeso")
+muestra_sobrepeso <- personas_sobrepeso[sample(nrow(personas_sobrepeso), 50, replace = FALSE), ]
+muestra_no_sobrepeso <- personas_no_sobrepeso[sample(nrow(personas_no_sobrepeso), 50, replace = FALSE), ]
+
+
+# Dividir la muestra en dos conjuntos
+# 100 personas (50 con EN "Sobrepeso" y 50 con EN "No sobrepeso") para el modelo RLO
+entrenamiento <- rbind(
+  muestra_sobrepeso[1:50, ],
+  muestra_no_sobrepeso[1:50, ]
+)
+
+# 50 personas (25 con EN "Sobrepeso" y 25 con EN "No sobrepeso") para la evaluación
+evaluacion <- rbind(
+  muestra_sobrepeso[51:100, ],
+  muestra_no_sobrepeso[51:100, ]
+)
+
+```
+
+# Pregunta 3
+
+Usando las herramientas del paquete leaps, realizar una búsqueda exhaustiva para seleccionar entre dos y ocho predictores que ayuden a estimar la variable Peso (Weight), obviamente sin considerar las nuevas variables IMC ni EN, y luego utilizar las funciones del paquete caret para construir un modelo de regresión lineal múltiple con los predictores escogidos y evaluarlo usando bootstrapping.
+```{r}
+library(leaps)
+
+# Especifica la fórmula para la selección de variables
+# Incluye todas las variables originales excepto IMC y EN
+formula <- Weight ~ . - IMC - EN
+
+# Realiza la búsqueda exhaustiva con leaps
+modelos <- regsubsets(formula, data = entrenamiento, nbest = 1, nvmax = 8, method = "exhaustive")
+
+# Resumen de los modelos ajustados de manera gráfica
+plot(modelos)
+
+# Obtener los predictores del mejor modelo con 1 a 8 variables
+mejores_modelos <- summary(modelos)$which
+
+mejores_modelos
+```
+
+Por lo observado tanto en la tabla generada como en el gŕafico, se tomará como variables predictoras.\n
+1.Chest.depth
+2.Waist.Girth
+3.Shoulder.Girth
+4.Thigh.Girth
+5.Hip.Girth
+6.Calf.Maximum.Girth
+7.Ankle.Minimum.Girth
+8.Height
+
+Se procede a construir el modelo de regresión lineal múltiple.
+
+```{r}
+library(caret)
+# Luego se seleccionan los predictores anteriormente descritos
+predictores_seleccionados <- c("Chest.depth", "Waist.Girth", "Shoulder.Girth", 
+                                "Hip.Girth", "Thigh.Girth", "Ankle.Minimum.Girth", 
+                                "Calf.Maximum.Girth", "Height")
+
+# Construir la fórmula para el modelo de regresión lineal múltiple
+formula_seleccionada <- as.formula(paste("Weight ~", paste(predictores_seleccionados, collapse = " + ")))
+
+# Configurar el control para el entrenamiento con bootstrapping
+control <- trainControl(method = "boot", number = 1000)
+
+# Entrenar el modelo de regresión lineal múltiple
+modelo_final <- train(formula_seleccionada, data = entrenamiento, method = "lm", trControl = control)
+
+# Resumen del modelo final
+print(modelo_final)
+```
+Dado el procedimiento anterior en que se hizo bootstraping generando 1000 muestras de 100 elementos cada uno, con un RMSE = 2.377881 indica que, en promedio, las predicciones del modelo están a aproximadamente 2.38 unidades de los valores reales; MAE = 1.8134 indica que, en promedio, las predicciones del modelo están a 1.81 unidades de los valores reales, sin tener en cuenta la dirección del error (positivo o negativo); y Coeficiente de Determinación igual a 0.9744388 por lo que la bondad de ajuste es bastante próxima a 1, lo que implica que los datos se ajustan a la recta en un 97.4% de la variabilidad en los datos, lo que indica un ajuste muy bueno.
+
+# Pregunta 4
+Haciendo un poco de investigación sobre el paquete caret, en particular cómo hacer Recursive Feature Elimination (RFE), construir un modelo de regresión lineal múltiple para predecir la variable IMC que incluya entre 10 y 20 predictores, seleccionando el conjunto de variables que maximice R2 y que use cinco repeticiones de validación cruzada de cinco pliegues para evitar el sobreajuste (obviamente no se debe considerar las variables Peso, Estatura ni estado nutricional –Weight, Height, EN respectivamente). 
+```{r}
+# Supongamos que tu conjunto de datos se llama 'data'
+# Excluir las variables 'Weight', 'Height', y 'EN'
+predictoras <- entrenamiento[, !(names(entrenamiento) %in% c("Weight", "Height", "EN", "IMC"))]
+respuesta <- entrenamiento$IMC
+# Configuración para la validación cruzada
+control <- trainControl(method = "repeatedcv", 
+                        number = 5, 
+                        repeats = 5)
+# Función para ajustar el modelo de regresión lineal
+lmFunc <- lmFuncs
+
+# Configurar el rango de variables a seleccionar
+sizes <- 10:20
+
+# Ejecutar el Recursive Feature Elimination (RFE)
+resultados_rfe <- rfe(x = predictoras, 
+                      y = respuesta,
+                      sizes = sizes,
+                      rfeControl = rfeControl(functions = lmFuncs, 
+                                              method = "repeatedcv", 
+                                              number = 5, 
+                                              repeats = 5))
+# Mostrar los resultados del RFE
+print(resultados_rfe)
+# Ver los predictores seleccionados
+predictores_seleccionados <- predictors(resultados_rfe)
+print(predictores_seleccionados)
+```
+De lo anterior, se seleccionan los siguientes predictores:\n
+1. Gender
+2. Knees.diameter
+3. Ankles.diameter
+4. Wrist.Minimum.Girth
+5. Elbows.diameter
+6. Forearm.Girth
+7. Calf.Maximum.Girth
+8. Biacromial.diameter
+9. Wrists.diameter
+10. Ankle.Minimum.Girth
+11. Bicep.Girth
+12. Chest.Girth
+13. Bitrochanteric.diameter
+14. Waist.Girth
+15. Chest.diameter
+16. Knee.Girth
+17. Thigh.Girth
+18. Shoulder.Girth
+19. Chest.depth
+
+Estos predictores fueron seleccionados porque, en conjunto, maximizan el valor de R2R2 en el modelo de regresión lineal múltiple. La selección se realizó a través de un proceso de validación cruzada de cinco pliegues, repetido cinco veces, lo que garantiza que los predictores seleccionados son robustos y ayudan a evitar el sobreajuste.
+
+Luego, se construye el modelo de regresión múltiple.
+
+```{r}
+# Crear la fórmula con los predictores seleccionados
+formula_final <- as.formula(paste("IMC ~", paste(predictores_seleccionados, collapse = " + ")))
+
+# Entrenar el modelo de regresión lineal múltiple con los predictores seleccionados
+modelo_final <- train(formula_final, 
+                      data = entrenamiento, 
+                      method = "lm", 
+                      trControl = control)
+
+# Resumen del modelo final
+print(modelo_final)
+```
+Dado el procedimiento anterior en que se hizo una validación 5 pliegues utilizando los 19 predictores seleccionados a través de Recursive Feature Elimination (RFE), con un RMSE = 1.321303 indica que, en promedio, las predicciones del modelo están a aproximadamente 1.32 unidades de los valores reales; MAE = 1.051872 indica que, en promedio, las predicciones del modelo están a 1.05 unidades de los valores reales, sin tener en cuenta la dirección del error (positivo o negativo); y Coeficiente de Determinación igual a 0.8665266 por lo que la bondad de ajuste es bastante próxima a 1, lo que implica que los datos se ajustan a la recta en un 86.65% de la variabilidad en los datos, lo que indica un ajuste muy bueno.
+
+# Pregunta 5
+Usando RFE, construir un modelo de regresión logística múltiple para la variable EN que incluya el conjunto, de entre dos y seis, predictores que entregue la mejor curva ROC y que utilice validación cruzada dejando uno fuera para evitar el sobreajuste (obviamente no se debe considerar las variables Peso, Estatura –Weight y Height respectivamente– ni IMC).
+```{r}
+library(pROC)
+
+# Excluir las variables 'Weight', 'Height', e 'IMC'
+formula <- Weight ~ . - IMC - EN - Weight - Height
+
+entrenamiento$EN <- factor(entrenamiento$EN)
+
+# Realiza la búsqueda exhaustiva con leaps
+modelos <- regsubsets(formula, data = entrenamiento, nbest = 2, nvmax = 6)
+
+# Resumen de los modelos ajustados de manera gráfica
+plot(modelos)
+
+# Obtener los predictores del mejor modelo con 1 a 8 variables
+mejores_modelos <- summary(modelos)$which
+
+mejores_modelos
+```
+
+Con lo anterior obtenemos como predictores Chest.depth, Shoulder.Girth, Hip.Girth, Calf.Maximum.Girth, Gender. Luego se constuye el modelo de regresión logística.
+
+```{r}
+# Construir la fórmula usando los predictores seleccionados
+formula <- as.formula(paste("EN ~", "Chest.depth + Shoulder.Girth + Hip.Girth + Calf.Maximum.Girth + Gender"))
+
+# Ajustar el modelo de regresión logística
+modelo <- glm(formula, data = entrenamiento, family = binomial)
+```
+Una vez construido el modelo de regresión logística, se evalua el modelo y su validez.
+
+```{r}
+# Validación cruzada Leave-One-Out (LOOCV)
+control_loocv <- trainControl(method = "LOOCV")
+modelo_loocv <- train(formula, data = entrenamiento, method = "glm", family = binomial, trControl = control_loocv)
+
+# Imprimir los resultados del modelo con LOOCV
+print(modelo_loocv)
+```
+Con esto, podemos observar que el modelo obtenido tiene un Accuracy de 0.8 esto indica que el modelo clasifica correctamente el 80% de las observaciones. Además, Kappa mide la concordancia entre las predicciones del modelo y los valores reales, ajustado por la probabilidad de concordancia aleatoria. Un Kappa de 0.6 generalmente se interpreta como una concordancia "moderada" según las pautas de interpretación estándar.
+
+Por último, evaluamos su poder preditivo.
+
+```{r}
+prediccion <- predict(modelo, type = "response")
+roc_obj <- roc(entrenamiento$EN, prediccion)
+plot(roc_obj)
+auc(roc_obj)
+```
+
+Podemos observar que el AUC = 0.9248 es bastante cercano a uno, por lo que terminamos de validar el modelo construido.
+
+# Pregunta 6
+
+1. Modelo de Regresión Lineal Múltiple para Predecir Peso (Weight)
+Confiabilidad:
+El modelo de regresión lineal múltiple para predecir el peso muestra un Coeficiente de Determinación R2R2 de 0.9744, lo cual indica un alto grado de ajuste. Esto significa que el 97.44% de la variabilidad en el peso puede ser explicada por el modelo, lo que sugiere una excelente confiabilidad.
+Además, los errores promedio son relativamente bajos, con un RMSE de 2.38 y un MAE de 1.81, lo que indica que las predicciones están generalmente cerca de los valores reales.
+Poder Predictivo:
+Dado el alto R2R2, podemos decir que el modelo tiene un fuerte poder predictivo para el conjunto de datos utilizado. El bajo RMSE sugiere que las predicciones son precisas, lo que refuerza la capacidad del modelo para hacer predicciones efectivas.
+
+2. Modelo de Regresión Lineal Múltiple para Predecir IMC\n
+Confiabilidad:
+El modelo que predice el IMC tiene un R2R2 de 0.8665, lo que significa que el 86.65% de la variabilidad en el IMC está explicado por los predictores seleccionados. Aunque no es tan alto como el modelo de peso, sigue siendo una cifra sólida que refleja una buena confiabilidad.
+El RMSE es 1.32, y el MAE es 1.05, ambos bastante bajos, lo que refuerza la idea de que el modelo es confiable para hacer predicciones en la muestra dada.\n
+Poder Predictivo:
+Con un R2R2 de 0.8665, el modelo tiene un poder predictivo razonablemente fuerte, aunque ligeramente inferior al modelo de peso. Aun así, su capacidad para predecir el IMC de manera precisa lo hace útil en aplicaciones prácticas.
+
+3. Modelo de Regresión Logística Múltiple para Predecir Estado Nutricional (EN)
+Confiabilidad:
+El modelo de regresión logística muestra una exactitud de 0.8 y un índice Kappa de 0.6. Una exactitud del 80% sugiere que el modelo clasifica correctamente 8 de cada 10 observaciones. Sin embargo, el Kappa de 0.6 indica una concordancia "moderada", lo que sugiere que, aunque el modelo es confiable, hay margen para mejorar en términos de la discriminación entre clases.
+El AUC de 0.9248 es bastante alto, lo que confirma que el modelo es muy efectivo para distinguir entre clases.
+Poder Predictivo:
+El AUC de 0.9248 indica un fuerte poder predictivo. El modelo es eficaz para predecir el estado nutricional, logrando una excelente capacidad de discriminación entre las clases "sobrepeso" y "no sobrepeso".
